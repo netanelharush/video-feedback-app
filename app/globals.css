@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+:root {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+
+html,
+body {
+  background: black;
+  color: white;
+  font-family: Arial, Helvetica, sans-serif;
+  overflow: hidden;
+}
+
+/* ANIMATED GRID */
+
+.animated-grid {
+  position: absolute;
+  inset: -100%;
+
+  background-image:
+    linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+
+  background-size: 60px 60px;
+
+  animation: moveGrid 8s linear infinite;
+
+  transform: rotate(0deg);
+}
+
+/* GRID MOVEMENT */
+
+@keyframes moveGrid {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(60px, 60px, 0);
+  }
+}
