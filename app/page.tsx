@@ -541,7 +541,7 @@ export default function Home() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#05050a] text-white">
+    <main className="relative min-h-screen overflow-x-hidden bg-[#05050a] text-white">
       <style jsx global>{`
         @keyframes softEnter {
           from {
@@ -635,6 +635,15 @@ export default function Home() {
           );
           animation: shimmerMove 1.5s ease-in-out infinite;
           pointer-events: none;
+        }
+
+        @media (max-width: 1023px) {
+          html,
+          body {
+            overflow-x: hidden;
+            overflow-y: auto;
+            height: auto;
+          }
         }
       `}</style>
       {/* BACKGROUND */}
@@ -850,7 +859,7 @@ export default function Home() {
           {selectedVideo ? (
             <>
               <div className="lg:hidden sticky top-[65px] z-20 border-b border-white/10 bg-[#05050a]/90 px-3 py-3 backdrop-blur-2xl">
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => setShowProjects(true)}
                     className="rounded-2xl border border-white/10 bg-white/10 px-3 py-3 text-sm font-black active:scale-95"
@@ -864,17 +873,10 @@ export default function Home() {
                   >
                     פידבק ({comments.length})
                   </button>
-
-                  <button
-                    onClick={requestVideoFullscreen}
-                    className="rounded-2xl border border-violet-400/30 bg-violet-500/15 px-3 py-3 text-sm font-black text-violet-100 active:scale-95"
-                  >
-                    הגדל
-                  </button>
                 </div>
               </div>
 
-              <div className="min-w-0 flex-1 overflow-visible p-3 pb-28 lg:overflow-y-auto lg:p-8 lg:pb-8">
+              <div className="min-w-0 flex-1 overflow-visible p-3 pb-36 lg:overflow-y-auto lg:p-8 lg:pb-8">
                 <div className="mx-auto max-w-6xl">
                   <div className="soft-enter mb-4 overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.045] p-4 shadow-2xl shadow-black/30 backdrop-blur-2xl lg:mb-6 lg:rounded-[36px] lg:p-6">
                     <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
@@ -959,7 +961,7 @@ export default function Home() {
                             setCurrentTime(videoRef.current.currentTime);
                           }
                         }}
-                        className="max-h-[42dvh] w-full rounded-[22px] bg-black object-contain lg:max-h-none lg:rounded-[28px]"
+                        className="max-h-[36dvh] w-full rounded-[22px] bg-black object-contain lg:max-h-none lg:rounded-[28px]"
                       />
 
                       <canvas
