@@ -26,6 +26,7 @@ type Annotation = {
     y: number;
   }[];
   video_id: number;
+  text?: string | null;
 };
 
 export default function Home() {
@@ -57,8 +58,28 @@ export default function Home() {
   const [switchingVideoId, setSwitchingVideoId] = useState<number | null>(null);
   const [savingComment, setSavingComment] = useState(false);
   const [showFeedbackMobile, setShowFeedbackMobile] = useState(false);
+  const [pendingAnnotation, setPendingAnnotation] = useState<Omit<Annotation, "text"> | null>(null);
+  const [annotationText, setAnnotationText] = useState("");
+  const [savingAnnotation, setSavingAnnotation] = useState(false);
 
   const totalFeedback = comments.length + annotations.length;
+
+  const feedbackItems = [
+    ...comments.map((comment) => ({
+      id: `comment-${comment.id}`,
+      kind: "comment" as const,
+      time: comment.time,
+      text: comment.text,
+      comment,
+    })),
+    ...annotations.map((annotation) => ({
+      id: `annotation-${annotation.id}`,
+      kind: "annotation" as const,
+      time: annotation.time,
+      text: annotation.text || "סימון על הווידאו",
+      annotation,
+    })),
+  ].sort((a, b) => a.time - b.time);
 
   function openVideo(video: Video) {
     setSwitchingVideoId(video.id);
@@ -369,6 +390,23 @@ export default function Home() {
     }
   }
 
+  async function deleteAnnotation(id: string) {
+    const previousAnnotations = annotations;
+    setAnnotations((prev) =>
+      prev.filter((annotation) => annotation.id !== id),
+    );
+
+    const { error } = await supabase
+      .from("annotations")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error(error);
+      setAnnotations(previousAnnotations);
+    }
+  }
+
   // GO TO TIME
   function goToTime(time: number) {
     if (!videoRef.current) return;
@@ -458,18 +496,55 @@ export default function Home() {
       video_id: selectedVideo.id,
     };
 
+    setPendingAnnotation(newAnnotation);
+    setAnnotationText("");
+    setCurrentPath([]);
+    setDrawing(false);
+    setDrawMode(false);
+  }
+
+  async function savePendingAnnotation() {
+    const cleanText = annotationText.trim();
+
+    if (!pendingAnnotation || !cleanText || savingAnnotation) return;
+
+    const annotationToSave: Annotation = {
+      ...pendingAnnotation,
+      text: cleanText,
+    };
+
+    setSavingAnnotation(true);
+    setAnnotations((prev) => [...prev, annotationToSave]);
+    setPendingAnnotation(null);
+    setAnnotationText("");
+
     const { error } = await supabase
       .from("annotations")
-      .insert([newAnnotation]);
+      .insert([annotationToSave]);
 
     if (error) {
       console.error(error);
-      return;
+      setAnnotations((prev) =>
+        prev.filter((annotation) => annotation.id !== annotationToSave.id),
+      );
+      setPendingAnnotation(pendingAnnotation);
+      setAnnotationText(cleanText);
     }
 
-    setAnnotations((prev) => [...prev, newAnnotation]);
-    setCurrentPath([]);
-    setDrawing(false);
+    setSavingAnnotation(false);
+  }
+
+  function cancelPendingAnnotation() {
+    setPendingAnnotation(null);
+    setAnnotationText("");
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
 
   // CLEAR CANVAS ON SCREEN ONLY
@@ -1073,53 +1148,61 @@ export default function Home() {
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <h2 className="text-2xl font-black">פידבק</h2>
-                      <p className="text-sm text-zinc-500">תגובות לפי זמן</p>
+                      <p className="text-sm text-zinc-500">תגובות וציורים לפי זמן</p>
                     </div>
 
                     <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-black">
-                      {comments.length}
+                      {feedbackItems.length}
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  {comments.length === 0 && (
+                  {feedbackItems.length === 0 && (
                     <div className="rounded-[28px] border border-dashed border-white/15 bg-black/30 p-8 text-center text-zinc-500">
-                      אין תגובות עדיין. הוסף את ההערה הראשונה מתחת לווידאו.
+                      אין פידבק עדיין. הוסף תגובה או צייר סימון על הווידאו.
                     </div>
                   )}
 
-                  {comments.map((comment) => {
-                    const isActive = Math.abs(currentTime - comment.time) < 2;
+                  {feedbackItems.map((item) => {
+                    const isActive = Math.abs(currentTime - item.time) < 2;
 
                     return (
                       <div
-                        key={comment.id}
+                        key={item.id}
                         className={`soft-enter card-pop rounded-[28px] border p-5 ${
                           isActive
-                            ? "border-blue-300/60 bg-blue-500/20 shadow-2xl shadow-blue-500/10"
+                            ? item.kind === "annotation"
+                              ? "border-red-300/60 bg-red-500/15 shadow-2xl shadow-red-500/10"
+                              : "border-blue-300/60 bg-blue-500/20 shadow-2xl shadow-blue-500/10"
                             : "border-white/10 bg-black/35 hover:border-white/20"
                         }`}
                       >
                         <div className="mb-4 flex items-center justify-between gap-3">
                           <button
-                            onClick={() => goToTime(comment.time)}
-                            className="button-pop rounded-full border border-blue-400/20 bg-blue-500/10 px-4 py-2 text-sm font-black text-blue-300 hover:border-blue-300/50 hover:bg-blue-500/20"
+                            onClick={() => goToTime(item.time)}
+                            className={`button-pop rounded-full border px-4 py-2 text-sm font-black ${
+                              item.kind === "annotation"
+                                ? "border-red-400/20 bg-red-500/10 text-red-300 hover:border-red-300/50 hover:bg-red-500/20"
+                                : "border-blue-400/20 bg-blue-500/10 text-blue-300 hover:border-blue-300/50 hover:bg-blue-500/20"
+                            }`}
                           >
-                            {formatTime(comment.time)}
+                            {item.kind === "annotation" ? "ציור" : "תגובה"} · {formatTime(item.time)}
                           </button>
 
                           <button
-                            onClick={() => deleteComment(comment.id)}
+                            onClick={() =>
+                              item.kind === "annotation"
+                                ? deleteAnnotation(item.annotation.id)
+                                : deleteComment(item.comment.id)
+                            }
                             className="button-pop rounded-full px-3 py-2 text-sm font-bold text-red-300 hover:bg-red-500/10 hover:text-red-200"
                           >
                             מחק
                           </button>
                         </div>
 
-                        <p className="leading-relaxed text-zinc-200">
-                          {comment.text}
-                        </p>
+                        <p className="leading-relaxed text-zinc-200">{item.text}</p>
                       </div>
                     );
                   })}
@@ -1140,7 +1223,7 @@ export default function Home() {
                     <div className="mb-5 flex items-center justify-between">
                       <div>
                         <h2 className="text-2xl font-black">פידבק</h2>
-                        <p className="text-sm text-zinc-500">תגובות לפי זמן</p>
+                        <p className="text-sm text-zinc-500">תגובות וציורים לפי זמן</p>
                       </div>
 
                       <button
@@ -1152,44 +1235,54 @@ export default function Home() {
                     </div>
 
                     <div className="space-y-3 pb-[env(safe-area-inset-bottom)]">
-                      {comments.length === 0 && (
+                      {feedbackItems.length === 0 && (
                         <div className="rounded-[24px] border border-dashed border-white/15 bg-black/30 p-6 text-center text-zinc-500">
-                          אין תגובות עדיין. הוסף את ההערה הראשונה מתחת לווידאו.
+                          אין פידבק עדיין. הוסף תגובה או צייר סימון על הווידאו.
                         </div>
                       )}
 
-                      {comments.map((comment) => {
-                        const isActive =
-                          Math.abs(currentTime - comment.time) < 2;
+                      {feedbackItems.map((item) => {
+                        const isActive = Math.abs(currentTime - item.time) < 2;
 
                         return (
                           <div
-                            key={comment.id}
+                            key={item.id}
                             className={`rounded-[24px] border p-4 ${
                               isActive
-                                ? "border-blue-300/60 bg-blue-500/20"
+                                ? item.kind === "annotation"
+                                  ? "border-red-300/60 bg-red-500/15"
+                                  : "border-blue-300/60 bg-blue-500/20"
                                 : "border-white/10 bg-black/35"
                             }`}
                           >
                             <div className="mb-3 flex items-center justify-between gap-3">
                               <button
-                                onClick={() => goToTime(comment.time)}
-                                className="rounded-full border border-blue-400/20 bg-blue-500/10 px-4 py-2 text-sm font-black text-blue-300"
+                                onClick={() => {
+                                  goToTime(item.time);
+                                  setShowFeedbackMobile(false);
+                                }}
+                                className={`rounded-full border px-4 py-2 text-sm font-black ${
+                                  item.kind === "annotation"
+                                    ? "border-red-400/20 bg-red-500/10 text-red-300"
+                                    : "border-blue-400/20 bg-blue-500/10 text-blue-300"
+                                }`}
                               >
-                                {formatTime(comment.time)}
+                                {item.kind === "annotation" ? "ציור" : "תגובה"} · {formatTime(item.time)}
                               </button>
 
                               <button
-                                onClick={() => deleteComment(comment.id)}
+                                onClick={() =>
+                                  item.kind === "annotation"
+                                    ? deleteAnnotation(item.annotation.id)
+                                    : deleteComment(item.comment.id)
+                                }
                                 className="rounded-full px-3 py-2 text-sm font-bold text-red-300"
                               >
                                 מחק
                               </button>
                             </div>
 
-                            <p className="leading-relaxed text-zinc-200">
-                              {comment.text}
-                            </p>
+                            <p className="leading-relaxed text-zinc-200">{item.text}</p>
                           </div>
                         );
                       })}
