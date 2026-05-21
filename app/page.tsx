@@ -56,6 +56,7 @@ export default function Home() {
   );
   const [switchingVideoId, setSwitchingVideoId] = useState<number | null>(null);
   const [savingComment, setSavingComment] = useState(false);
+  const [showFeedbackMobile, setShowFeedbackMobile] = useState(false);
 
   const totalFeedback = comments.length + annotations.length;
 
@@ -66,6 +67,7 @@ export default function Home() {
     setAnnotations([]);
     setCurrentTime(0);
     setShowProjects(false);
+    setShowFeedbackMobile(false);
 
     Promise.all([fetchComments(video.id), fetchAnnotations(video.id)]).finally(
       () => {
@@ -373,6 +375,15 @@ export default function Home() {
 
     videoRef.current.currentTime = time;
     videoRef.current.play();
+    setShowFeedbackMobile(false);
+  }
+
+  function requestVideoFullscreen() {
+    if (!videoRef.current) return;
+
+    if (videoRef.current.requestFullscreen) {
+      videoRef.current.requestFullscreen();
+    }
   }
 
   // GET MOUSE POSITION
@@ -514,7 +525,7 @@ export default function Home() {
   // LOADING
   if (loading) {
     return (
-      <main className="relative min-h-screen overflow-hidden bg-[#05050a] text-white">
+      <main className="relative min-h-screen overflow-x-hidden bg-[#05050a] text-white">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.22),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(168,85,247,0.18),transparent_34%)]" />
         <div className="relative flex min-h-screen items-center justify-center">
           <div className="rounded-[32px] border border-white/10 bg-white/[0.06] px-10 py-8 text-center shadow-2xl shadow-black/40 backdrop-blur-2xl">
@@ -631,20 +642,20 @@ export default function Home() {
       <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:56px_56px] opacity-20" />
 
       {/* TOPBAR */}
-      <div className="soft-enter sticky top-0 z-30 border-b border-white/10 bg-black/35 px-4 py-4 backdrop-blur-2xl lg:px-8">
-        <div className="mx-auto flex max-w-[1800px] items-center justify-between gap-4">
+      <div className="soft-enter sticky top-0 z-30 border-b border-white/10 bg-black/55 px-3 py-3 backdrop-blur-2xl lg:px-8 lg:py-4">
+        <div className="mx-auto flex max-w-[1800px] items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-4">
             <img
               src="/logo.png"
               alt="flow.il"
-              className="h-14 w-14 shrink-0 object-contain drop-shadow-[0_0_28px_rgba(120,119,255,0.55)]"
+              className="h-9 w-9 shrink-0 object-contain drop-shadow-[0_0_28px_rgba(120,119,255,0.55)] lg:h-14 lg:w-14"
             />
 
             <div className="min-w-0">
-              <h1 className="truncate text-2xl font-black tracking-tight lg:text-3xl">
+              <h1 className="truncate text-xl font-black tracking-tight lg:text-3xl">
                 flow.il
               </h1>
-              <p className="truncate text-sm text-zinc-400">
+              <p className="max-w-[145px] truncate text-xs text-zinc-400 sm:max-w-none lg:text-sm">
                 סקירת סרטונים, סימונים ואיסוף פידבק במקום אחד
               </p>
             </div>
@@ -653,14 +664,14 @@ export default function Home() {
           <div className="flex shrink-0 items-center gap-2 lg:gap-3">
             <button
               onClick={() => setShowProjects(true)}
-              className="button-pop lg:hidden rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-bold hover:border-white/25 hover:bg-white/20"
+              className="button-pop lg:hidden rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-sm font-bold hover:border-white/25 hover:bg-white/20"
             >
               פרויקטים
             </button>
 
             <button
               onClick={logout}
-              className="button-pop rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-300 hover:border-red-400/50 hover:bg-red-500/20 lg:px-5"
+              className="button-pop rounded-2xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-300 hover:border-red-400/50 hover:bg-red-500/20 lg:px-5 lg:py-3"
             >
               התנתקות
             </button>
@@ -696,7 +707,7 @@ export default function Home() {
         </div>
       )}
 
-      <div className="relative mx-auto flex h-[calc(100vh-81px)] max-w-[1800px]">
+      <div className="relative mx-auto flex min-h-[calc(100dvh-65px)] max-w-[1800px] lg:h-[calc(100vh-81px)]">
         {showProjects && (
           <div
             onClick={() => setShowProjects(false)}
@@ -803,6 +814,9 @@ export default function Home() {
                 >
                   <video
                     src={video.url}
+                    muted
+                    playsInline
+                    preload="metadata"
                     className="aspect-video w-full object-cover transition-all duration-300 group-hover:scale-105 group-hover:opacity-90"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-90" />
@@ -824,9 +838,7 @@ export default function Home() {
                   disabled={deletingVideoId === video.id}
                   className="button-pop w-full border-t border-red-500/10 bg-red-500/[0.06] py-3 text-sm font-black text-red-300 hover:bg-red-500/15 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {deletingVideoId === video.id
-                    ? "מוחק..."
-                    : "מחק וידאו"}
+                  {deletingVideoId === video.id ? "מוחק..." : "מחק וידאו"}
                 </button>
               </div>
             ))}
@@ -834,26 +846,52 @@ export default function Home() {
         </aside>
 
         {/* MAIN */}
-        <section className="flex min-w-0 flex-1 flex-col overflow-hidden lg:flex-row">
+        <section className="flex min-w-0 flex-1 flex-col overflow-visible lg:overflow-hidden lg:flex-row">
           {selectedVideo ? (
             <>
-              <div className="min-w-0 flex-1 overflow-y-auto p-4 lg:p-8">
+              <div className="lg:hidden sticky top-[65px] z-20 border-b border-white/10 bg-[#05050a]/90 px-3 py-3 backdrop-blur-2xl">
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => setShowProjects(true)}
+                    className="rounded-2xl border border-white/10 bg-white/10 px-3 py-3 text-sm font-black active:scale-95"
+                  >
+                    פרויקטים
+                  </button>
+
+                  <button
+                    onClick={() => setShowFeedbackMobile(true)}
+                    className="rounded-2xl border border-blue-400/30 bg-blue-500/15 px-3 py-3 text-sm font-black text-blue-100 active:scale-95"
+                  >
+                    פידבק ({comments.length})
+                  </button>
+
+                  <button
+                    onClick={requestVideoFullscreen}
+                    className="rounded-2xl border border-violet-400/30 bg-violet-500/15 px-3 py-3 text-sm font-black text-violet-100 active:scale-95"
+                  >
+                    הגדל
+                  </button>
+                </div>
+              </div>
+
+              <div className="min-w-0 flex-1 overflow-visible p-3 pb-28 lg:overflow-y-auto lg:p-8 lg:pb-8">
                 <div className="mx-auto max-w-6xl">
-                  <div className="soft-enter mb-6 overflow-hidden rounded-[36px] border border-white/10 bg-white/[0.045] p-5 shadow-2xl shadow-black/30 backdrop-blur-2xl lg:p-6">
+                  <div className="soft-enter mb-4 overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.045] p-4 shadow-2xl shadow-black/30 backdrop-blur-2xl lg:mb-6 lg:rounded-[36px] lg:p-6">
                     <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                       <div>
                         <div className="mb-3 inline-flex rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-300">
                           סביבת סקירה חיה
                         </div>
-                        <h2 className="text-3xl font-black tracking-tight lg:text-5xl">
+                        <h2 className="text-2xl font-black tracking-tight lg:text-5xl">
                           סקירת וידאו
                         </h2>
-                        <p className="mt-2 max-w-2xl text-zinc-400">
-                          הוסף הערות לפי זמן, קפוץ בין תגובות וסמן ישירות על הפריים.
+                        <p className="mt-2 hidden max-w-2xl text-zinc-400 sm:block">
+                          הוסף הערות לפי זמן, קפוץ בין תגובות וסמן ישירות על
+                          הפריים.
                         </p>
                       </div>
 
-                      <div className="flex flex-wrap gap-3">
+                      <div className="flex flex-wrap gap-2 lg:gap-3">
                         <button
                           onClick={() => {
                             const newMode = !drawMode;
@@ -881,7 +919,7 @@ export default function Home() {
                       </div>
                     </div>
 
-                    <div className="mt-6 grid grid-cols-3 gap-3">
+                    <div className="mt-4 grid grid-cols-3 gap-2 lg:mt-6 lg:gap-3">
                       <div className="rounded-3xl border border-white/10 bg-black/30 p-4">
                         <p className="text-2xl font-black">{comments.length}</p>
                         <p className="text-xs text-zinc-500">תגובות</p>
@@ -902,23 +940,26 @@ export default function Home() {
                   </div>
 
                   <div
-                    className={`soft-enter overflow-hidden rounded-[36px] border border-white/10 bg-white/[0.045] p-3 shadow-2xl shadow-black/30 backdrop-blur-2xl transition-all duration-300 lg:p-5 ${
+                    className={`soft-enter overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.045] p-2 shadow-2xl shadow-black/30 backdrop-blur-2xl transition-all duration-300 lg:rounded-[36px] lg:p-5 ${
                       switchingVideoId === selectedVideo.id
                         ? "scale-[0.99] opacity-70"
                         : "scale-100 opacity-100"
                     }`}
                   >
-                    <div className="relative overflow-hidden rounded-[28px] bg-black shadow-2xl shadow-black/60">
+                    <div className="relative overflow-hidden rounded-[22px] bg-black shadow-2xl shadow-black/60 lg:rounded-[28px]">
                       <video
                         ref={videoRef}
                         src={selectedVideo.url}
                         controls
+                        playsInline
+                        preload="metadata"
+                        controlsList="nodownload"
                         onTimeUpdate={() => {
                           if (videoRef.current) {
                             setCurrentTime(videoRef.current.currentTime);
                           }
                         }}
-                        className="w-full rounded-[28px]"
+                        className="max-h-[42dvh] w-full rounded-[22px] bg-black object-contain lg:max-h-none lg:rounded-[28px]"
                       />
 
                       <canvas
@@ -951,13 +992,13 @@ export default function Home() {
                       )}
                     </div>
 
-                    <div className="mt-6 rounded-3xl border border-white/10 bg-black/30 p-4">
+                    <div className="mt-3 rounded-3xl border border-white/10 bg-black/30 p-3 lg:mt-6 lg:p-4">
                       <div className="mb-3 flex items-center justify-between text-sm text-zinc-400">
                         <span>ציר זמן</span>
                         <span>{totalFeedback} סימונים</span>
                       </div>
 
-                      <div className="relative h-5 overflow-hidden rounded-full bg-white/10">
+                      <div className="relative h-4 overflow-hidden rounded-full bg-white/10 lg:h-5">
                         <div
                           className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-blue-500/40 to-purple-500/30"
                           style={{
@@ -974,7 +1015,7 @@ export default function Home() {
                               key={comment.id}
                               onClick={() => goToTime(comment.time)}
                               title={`תגובה ב-${formatTime(comment.time)}`}
-                              className="absolute top-1/2 h-5 w-5 -translate-y-1/2 cursor-pointer rounded-full border-4 border-black bg-blue-400 shadow-lg shadow-blue-500/30 transition-all duration-200 hover:scale-150 active:scale-125"
+                              className="absolute top-1/2 h-4 w-4 -translate-y-1/2 cursor-pointer rounded-full border-[3px] border-black bg-blue-400 shadow-lg shadow-blue-500/30 transition-all duration-200 hover:scale-150 active:scale-125 lg:h-5 lg:w-5 lg:border-4"
                               style={{ left: `${left}%` }}
                             />
                           );
@@ -989,7 +1030,7 @@ export default function Home() {
                               key={annotation.id}
                               onClick={() => goToTime(annotation.time)}
                               title={`סימון ב-${formatTime(annotation.time)}`}
-                              className="absolute top-1/2 h-4 w-4 -translate-y-1/2 cursor-pointer rounded-full border-2 border-white bg-red-500 shadow-lg shadow-red-500/30 transition-all duration-200 hover:scale-150 active:scale-125"
+                              className="absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 cursor-pointer rounded-full border-2 border-white bg-red-500 shadow-lg shadow-red-500/30 transition-all duration-200 hover:scale-150 active:scale-125 lg:h-4 lg:w-4"
                               style={{ left: `${left}%` }}
                             />
                           );
@@ -998,7 +1039,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="soft-enter mt-6 rounded-[32px] border border-white/10 bg-white/[0.045] p-4 shadow-2xl shadow-black/20 backdrop-blur-2xl lg:p-5">
+                  <div className="soft-enter mt-4 rounded-[28px] border border-white/10 bg-white/[0.045] p-3 shadow-2xl shadow-black/20 backdrop-blur-2xl lg:mt-6 lg:rounded-[32px] lg:p-5">
                     <div className="flex flex-col gap-4 lg:flex-row">
                       <input
                         type="text"
@@ -1010,13 +1051,13 @@ export default function Home() {
                             addComment();
                           }
                         }}
-                        className="min-h-14 flex-1 rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-white outline-none transition-all duration-200 placeholder:text-zinc-600 focus:border-blue-400/60 focus:ring-4 focus:ring-blue-500/10"
+                        className="min-h-12 flex-1 rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition-all duration-200 placeholder:text-zinc-600 focus:border-blue-400/60 focus:ring-4 focus:ring-blue-500/10 lg:min-h-14 lg:px-5 lg:py-4"
                       />
 
                       <button
                         onClick={addComment}
                         disabled={savingComment || !commentText.trim()}
-                        className="button-pop rounded-2xl bg-white px-8 py-4 font-black text-black shadow-2xl shadow-white/10 hover:shadow-white/20 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="button-pop rounded-2xl bg-white px-8 py-3 font-black text-black shadow-2xl shadow-white/10 hover:shadow-white/20 disabled:cursor-not-allowed disabled:opacity-40 lg:py-4"
                       >
                         {savingComment ? "שומר..." : "הוסף הערה"}
                       </button>
@@ -1025,14 +1066,12 @@ export default function Home() {
                 </div>
               </div>
 
-              <aside className="soft-enter max-h-[42vh] w-full overflow-y-auto border-t border-white/10 bg-white/[0.035] p-5 backdrop-blur-2xl lg:max-h-none lg:w-[430px] lg:border-l lg:border-t-0 lg:p-6">
+              <aside className="soft-enter hidden max-h-[42vh] w-full overflow-y-auto border-t border-white/10 bg-white/[0.035] p-5 backdrop-blur-2xl lg:block lg:max-h-none lg:w-[430px] lg:border-l lg:border-t-0 lg:p-6">
                 <div className="sticky top-0 z-10 mb-6 rounded-[28px] border border-white/10 bg-black/50 p-5 backdrop-blur-2xl">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <h2 className="text-2xl font-black">פידבק</h2>
-                      <p className="text-sm text-zinc-500">
-                        תגובות לפי זמן
-                      </p>
+                      <p className="text-sm text-zinc-500">תגובות לפי זמן</p>
                     </div>
 
                     <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-black">
@@ -1084,6 +1123,78 @@ export default function Home() {
                   })}
                 </div>
               </aside>
+
+              {showFeedbackMobile && (
+                <div
+                  className="fixed inset-0 z-[90] bg-black/70 backdrop-blur-sm lg:hidden"
+                  onClick={() => setShowFeedbackMobile(false)}
+                >
+                  <div
+                    className="absolute bottom-0 left-0 right-0 max-h-[78dvh] overflow-y-auto rounded-t-[32px] border-t border-white/10 bg-[#07070d] p-4 shadow-2xl shadow-black"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-white/20" />
+
+                    <div className="mb-5 flex items-center justify-between">
+                      <div>
+                        <h2 className="text-2xl font-black">פידבק</h2>
+                        <p className="text-sm text-zinc-500">תגובות לפי זמן</p>
+                      </div>
+
+                      <button
+                        onClick={() => setShowFeedbackMobile(false)}
+                        className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-black"
+                      >
+                        סגור
+                      </button>
+                    </div>
+
+                    <div className="space-y-3 pb-[env(safe-area-inset-bottom)]">
+                      {comments.length === 0 && (
+                        <div className="rounded-[24px] border border-dashed border-white/15 bg-black/30 p-6 text-center text-zinc-500">
+                          אין תגובות עדיין. הוסף את ההערה הראשונה מתחת לווידאו.
+                        </div>
+                      )}
+
+                      {comments.map((comment) => {
+                        const isActive =
+                          Math.abs(currentTime - comment.time) < 2;
+
+                        return (
+                          <div
+                            key={comment.id}
+                            className={`rounded-[24px] border p-4 ${
+                              isActive
+                                ? "border-blue-300/60 bg-blue-500/20"
+                                : "border-white/10 bg-black/35"
+                            }`}
+                          >
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                              <button
+                                onClick={() => goToTime(comment.time)}
+                                className="rounded-full border border-blue-400/20 bg-blue-500/10 px-4 py-2 text-sm font-black text-blue-300"
+                              >
+                                {formatTime(comment.time)}
+                              </button>
+
+                              <button
+                                onClick={() => deleteComment(comment.id)}
+                                className="rounded-full px-3 py-2 text-sm font-bold text-red-300"
+                              >
+                                מחק
+                              </button>
+                            </div>
+
+                            <p className="leading-relaxed text-zinc-200">
+                              {comment.text}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <div className="flex flex-1 items-center justify-center p-6">
@@ -1093,11 +1204,10 @@ export default function Home() {
                   alt="flow.il"
                   className="mx-auto mb-6 h-24 w-24 object-contain drop-shadow-[0_0_32px_rgba(120,119,255,0.55)]"
                 />
-                <h2 className="text-3xl font-black">
-                  העלה מהפאנל השמאלי
-                </h2>
+                <h2 className="text-3xl font-black">העלה מהפאנל השמאלי</h2>
                 <p className="mt-3 text-zinc-400">
-                  גרור וידאו לפאנל הפרויקטים, או לחץ פעמיים באזור ההעלאה כדי לבחור קובץ.
+                  גרור וידאו לפאנל הפרויקטים, או לחץ פעמיים באזור ההעלאה כדי
+                  לבחור קובץ.
                 </p>
               </div>
             </div>
